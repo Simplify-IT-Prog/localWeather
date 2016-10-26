@@ -25,11 +25,11 @@ namespace ClassGoogleGeocoding
             {
                 this.address = typedAddress;
 
-                //Query Google Geocoding for information and save JSON file
-                saveGeocodingJSON();
+                //Determine if search term was already performed.  If not performed (no previously saved JSON results), then perform search.
+                if (!File.Exists("Geocode_" + address + ".json")) { saveGeocodingJSON(); }  //Query Google Geocoding for information and save JSON file
 
                 //open saved file and seralize object
-                StreamReader sr = File.OpenText(this.address + ".json");
+                StreamReader sr = File.OpenText("Geocode_" + address + ".json");
                 String gGeocodeData = sr.ReadToEnd();
                 googleGeocoding uniqueAddressModel = JsonConvert.DeserializeObject<googleGeocoding>(gGeocodeData);
 
@@ -53,26 +53,28 @@ namespace ClassGoogleGeocoding
             string s = reader.ReadToEnd();
 
             //save json file to asset folder
-            string path = address + ".json";
+            string path = "Geocode_" + address + ".json";
             if (!File.Exists(path))
             {
                 // Create a json file and write web output to file.
                 using (StreamWriter sw = File.CreateText(path)) { sw.WriteLine(s); }
             }
-            else
-            {
-                // Query already performed
-                //check date on saved query and rerun if older than one day
-                // TODO update this section in the future.
-            }
         }
         private string getGeocodingURL()
         {
+            string initialString;
+            int addressToNum = -1;
             //Returns the URL for geocoding based on the submitted address
             //website for requesting geocoding informatoin: https://maps.googleapis.com/maps/api/geocode/json?address=Toledo&region=es&key=
-            string initialString = @"https://maps.googleapis.com/maps/api/geocode/json?address=";
+            if (int.TryParse(address, out addressToNum))
+            {
+                initialString = String.Format(@"https://maps.googleapis.com/maps/api/geocode/json?components=postal_code:" + addressToNum + "&key=AIzaSyBRBZtk0JyJrAzmp2i9DklBHhjvKwoI0JE");
+            } else {
+                initialString = String.Format(@"https://maps.googleapis.com/maps/api/geocode/json?address=" + address.Replace(" ", "").ToLower());
+            }
+            
             //string lastString = @"&key=";  //Apparently you do not need a key;
-            return (initialString + this.address);
+            return (initialString);
         }
         private void setGeoLat() { this.geoLatitude = uniqueAddressModel.results[0].geometry.location.lat; }
         private void setGeoLng() { this.geoLongtitude = uniqueAddressModel.results[0].geometry.location.lng; }
